@@ -62,6 +62,7 @@ interface GitHubRelease {
 
 const MODRINTH_OAUTH_BASE_URL = 'https://rinthy-auth-backend-pgae.vercel.app';
 const MODRINTH_OAUTH_STATE_KEY = 'modrinth_oauth_state';
+const DISCORD_INVITE_URL = 'https://discord.gg/frd5Cw7xPj';
 
 const generateOAuthState = () => {
   try {
@@ -329,8 +330,8 @@ const LanguageSelect: React.FC<{
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('pointerdown', handleClickOutside);
+    return () => document.removeEventListener('pointerdown', handleClickOutside);
   }, [open]);
 
   return (
@@ -989,8 +990,8 @@ const Dashboard: React.FC<{ user: ModrinthUser; token: string }> = ({ user, toke
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('pointerdown', handleClickOutside);
+    return () => document.removeEventListener('pointerdown', handleClickOutside);
   }, [showSortMenu]);
 
   const getSortModeLabel = (mode: ProjectSortMode) =>
@@ -1004,6 +1005,17 @@ const Dashboard: React.FC<{ user: ModrinthUser; token: string }> = ({ user, toke
           <p className="text-modrinth-muted text-xs font-medium">{t('dev_panel')}</p>
         </div>
         <div className="flex items-center gap-2">
+           <a
+             href={DISCORD_INVITE_URL}
+             target="_blank"
+             rel="noreferrer"
+             className="p-2 text-modrinth-muted hover:text-modrinth-green transition-colors"
+             aria-label="Open Discord server"
+           >
+             <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current opacity-90" aria-hidden="true">
+               <path d="M20.317 4.369a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.078.037 13.709 13.709 0 0 0-.608 1.249 18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.249.077.077 0 0 0-.079-.037 19.736 19.736 0 0 0-4.885 1.515.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.056 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.13 14.13 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128c.126-.094.252-.192.372-.291a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .078.009c.12.099.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.04.107 15.228 15.228 0 0 0 1.225 1.993.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.055c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03ZM8.02 15.331c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.418 2.157-2.418 1.211 0 2.176 1.094 2.157 2.418 0 1.334-.955 2.419-2.157 2.419Zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.418 2.157-2.418 1.211 0 2.176 1.094 2.157 2.418 0 1.334-.946 2.419-2.157 2.419Z"/>
+             </svg>
+           </a>
            <button
              onClick={() => loadProjects()}
              className="p-2 text-modrinth-muted hover:text-modrinth-green transition-colors"
@@ -1199,17 +1211,17 @@ const ProfileEditModal: React.FC<{ isOpen: boolean; onClose: () => void; user: M
   const overlayClass = theme === 'light' ? 'bg-black/40' : 'bg-black/60';
   const modalClass = theme === 'light'
     ? 'bg-white/95 border border-black/10 shadow-[0_14px_36px_rgba(0,0,0,0.2)]'
-    : 'bg-modrinth-card/85 shadow-[0_14px_36px_rgba(0,0,0,0.4)]';
+    : 'bg-modrinth-card/90 shadow-[0_18px_44px_rgba(0,0,0,0.48)]';
   const inputClass = theme === 'light'
-    ? 'bg-black/[0.04] border border-black/10 text-black focus:border-modrinth-green'
-    : 'bg-modrinth-bg/60 border border-modrinth-border/70 text-modrinth-text focus:border-modrinth-green';
+    ? 'bg-black/[0.04] text-black shadow-[inset_0_0_0_1px_rgba(0,0,0,0.08)] focus:shadow-[inset_0_0_0_1px_rgba(48,178,124,0.55)]'
+    : 'bg-modrinth-bg text-modrinth-text shadow-[inset_0_0_0_1px_rgba(255,255,255,0.03),inset_0_0_0_2px_rgba(0,0,0,0.22)] focus:shadow-[inset_0_0_0_1px_rgba(74,222,128,0.35),inset_0_0_0_2px_rgba(0,0,0,0.22)]';
   const mutedLabelClass = theme === 'light' ? 'text-black/60' : 'text-modrinth-muted';
   const closeButtonClass = theme === 'light'
     ? 'p-2 rounded-full hover:bg-black/5 text-black/60 hover:text-black transition-colors'
-    : 'p-2 rounded-full hover:bg-modrinth-cardHover text-modrinth-muted hover:text-modrinth-text transition-colors';
+    : 'p-2 rounded-full hover:bg-modrinth-bg text-modrinth-muted hover:text-modrinth-text transition-colors';
   const cancelButtonClass = theme === 'light'
     ? 'flex-1 py-3 rounded-2xl font-bold text-sm bg-black/5 text-black/70 hover:text-black hover:bg-black/10 transition-colors active:scale-[0.98]'
-    : 'flex-1 py-3 rounded-2xl font-bold text-sm bg-modrinth-bg/60 text-modrinth-muted hover:text-modrinth-text hover:bg-modrinth-bg transition-colors active:scale-[0.98]';
+    : 'flex-1 py-3 rounded-2xl font-bold text-sm bg-modrinth-bg text-modrinth-muted hover:text-modrinth-text hover:bg-modrinth-cardHover transition-colors active:scale-[0.98] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.03),inset_0_0_0_2px_rgba(0,0,0,0.22)]';
 
   return (
     <div className={`fixed inset-0 z-[150] ${overlayClass} backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in`}>
@@ -1269,6 +1281,7 @@ const ProjectDetail: React.FC<{ token: string; currentUserId?: string | null }> 
   const [editingVersionDependencies, setEditingVersionDependencies] = useState<ProjectDependency[]>([]);
   const [savingVersion, setSavingVersion] = useState(false);
   const [versionMenuId, setVersionMenuId] = useState<string | null>(null);
+  const versionMenuRef = useRef<HTMLDivElement | null>(null);
   const [selectedVersion, setSelectedVersion] = useState<ModrinthVersion | null>(null);
   const [selectedVersionDeps, setSelectedVersionDeps] = useState<ProjectDependency[]>([]);
   const [selectedVersionDepsLoading, setSelectedVersionDepsLoading] = useState(false);
@@ -1295,6 +1308,19 @@ const ProjectDetail: React.FC<{ token: string; currentUserId?: string | null }> 
 
   const [gameVersionTags, setGameVersionTags] = useState<string[]>([]);
   const [loaderTags, setLoaderTags] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!versionMenuId) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!versionMenuRef.current?.contains(event.target as Node)) {
+        setVersionMenuId(null);
+      }
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    return () => document.removeEventListener('pointerdown', handlePointerDown);
+  }, [versionMenuId]);
   const [newDepType, setNewDepType] = useState<'required' | 'optional' | 'incompatible' | 'embedded'>('required');
 
   const allGameVersions = useMemo(() => {
@@ -1786,7 +1812,7 @@ const ProjectDetail: React.FC<{ token: string; currentUserId?: string | null }> 
                                     </div>
                                     <p className="text-xs text-modrinth-muted truncate w-40">{v.name}</p>
                                 </div>
-                                <div className="flex flex-col items-end gap-2">
+                                <div className="flex flex-col items-end gap-2" ref={versionMenuId === v.id ? versionMenuRef : null}>
                                   <button
                                     onClick={(e) => { e.stopPropagation(); setVersionMenuId(prev => prev === v.id ? null : v.id); }}
                                     className={`p-3 rounded-full transition-colors ${

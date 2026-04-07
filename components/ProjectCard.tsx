@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ModrinthProject } from '../types';
 import { Download, Activity, ChevronRight, Globe, Lock, Archive, Clock, Heart, MoreVertical, ExternalLink, Copy } from 'lucide-react';
 
@@ -25,6 +25,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) => {
   const StatusIcon = status.icon;
 
   const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
 
   const projectUrl = `https://modrinth.com/project/${project.slug}`;
 
@@ -54,8 +55,22 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) => {
     setShowMenu(false);
   };
 
+  useEffect(() => {
+    if (!showMenu) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!menuRef.current?.contains(event.target as Node)) {
+        setShowMenu(false);
+      }
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    return () => document.removeEventListener('pointerdown', handlePointerDown);
+  }, [showMenu]);
+
   return (
-    <div 
+    <div
+      ref={menuRef}
       onClick={() => onClick(project.id)}
       className="bg-modrinth-card/75 backdrop-blur-xl rounded-3xl p-4 mb-4 active:scale-[0.985] transition-all duration-300 cursor-pointer shadow-[0_10px_28px_rgba(0,0,0,0.28)] hover:shadow-[0_14px_36px_rgba(0,0,0,0.34)] group relative overflow-hidden"
     >
