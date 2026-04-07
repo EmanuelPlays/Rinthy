@@ -173,3 +173,86 @@ npx cap open android
 - Выдай нужные права, если хочешь использовать PAT fallback
 
 **Важно:** токен хранится локально на устройстве.
+
+# **IT**
+
+Rinthy è un'app mobile per gli sviluppatori di Modrinth.
+Ti aiuta a gestire i tuoi progetti e a controllare l'analitica direttamente dal tuo telefono.
+
+
+**Disclaimer:** App non ufficiale per Modrinth. Non affiliata o supportata da Modrinth.
+
+## Screenshots
+
+<div align="center">
+  <img src="./docs/screenshots/login.png" width="280" alt="Login" />
+  <img src="./docs/screenshots/developer-panel.png" width="280" alt="Developer Panel" />
+  <img src="./docs/screenshots/analytics.png" width="280" alt="Analytics" />
+</div>
+
+## Caratteristiche
+- **Dashboard dei progetti** (la tua lista di progetti)
+- **Modifica del progetto** (titolo/sommario/descrizione, link, stato)
+- **Gestione del team del progetto** (membri)
+- **Gestione delle versioni** (visualizza/modifica le versioni)
+- **Panoramica analitica** (download/follow)
+- **Notifiche** (notifiche non lette)
+- **Modifica del profilo** (username, bio, avatar)
+- **Impostazioni dell'aspetto** (tema, colore principale)
+- **Supporto per le lingue RU/EN**
+- **Visualizzazione del saldo**   
+
+## Inizio (sviluppo locale)
+
+### Requisiti
+
+- Node.js
+- Android Studio (per le build Android)
+
+### Installa
+
+```bash
+npm install
+```
+
+### Esegui nel browser (dev)
+
+```bash
+npm run dev
+```
+
+## Android build (Capacitor)
+
+### Costruisci il bundle del web
+
+```bash
+npm run build
+```
+
+### Sincronizza i assets su Android
+
+```bash
+npx cap sync android
+```
+
+Se hai cambiato le impostazioni Android deep link per il OAuth, esegui la sincronizzazione un'altra volta prima di aprire Android Studio.
+
+### Apri Android Studio
+
+```bash
+npx cap open android
+```
+
+### Esegui sul dispositivo
+
+Dallo  Studio Android (Android Studio) : **Esegui**
+
+
+## Autenticazione
+Rinthy utilizza **Modrinth OAuth** come metodo principale di accesso.
+- Distribuisci il backend di autenticazione su Vercel
+- Configura l'URI di reindirizzamento dell'applicazione Modrinth al tuo callback backend
+- Accedi con il pulsante `Continue with Modrinth` nell'app
+L'accesso con PAT è ancora disponibile come fallback.
+**Sicurezza:** il token è salvato localmente sul tuo dispositivo.
+
