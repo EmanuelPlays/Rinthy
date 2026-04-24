@@ -3,7 +3,7 @@
 declare const __APP_VERSION__: string;
 import { HashRouter, Routes, Route, useNavigate, useParams, Outlet, useLocation } from 'react-router-dom';
 import { App as CapApp } from '@capacitor/app';
-import { Loader2, LogOut, ArrowLeft, Save, ExternalLink, BarChart2, ShieldCheck, Key, ChevronRight, Download, Activity, BookOpen, FileText, Monitor, Server, Edit3, Globe, Wallet, DollarSign, TrendingUp, Archive, Lock, EyeOff, Info, Heart, Clock, Users, Trash2, Moon, Sun, Smartphone, UserPlus, Search, X, Check, ChevronDown, Bell, AlertTriangle, Image as ImageIcon, Upload, Package, Calendar, File as FileIcon, Layers, MousePointerClick, CheckCheck, RefreshCw, MoreVertical } from 'lucide-react';
+import { Loader2, LogOut, ArrowLeft, Save, ExternalLink, BarChart2, ShieldCheck, Key, ChevronRight, Download, Activity, BookOpen, FileText, Monitor, Server, Edit3, Globe, Wallet, DollarSign, Archive, Lock, EyeOff, Info, Heart, Clock, Users, Trash2, Moon, Sun, Smartphone, UserPlus, Search, X, Check, ChevronDown, Bell, AlertTriangle, Image as ImageIcon, Upload, Package, Calendar, File as FileIcon, Layers, MousePointerClick, CheckCheck, RefreshCw, MoreVertical } from 'lucide-react';
 import { fetchCurrentUser, fetchUserProjects, fetchProject, updateProject, fetchProjectMembers, deleteTeamMember, updateTeamMember, searchUser, addTeamMember, modifyUser, fetchNotifications, deleteNotification, markNotificationRead, markMultipleNotificationsRead, changeProjectIcon, deleteProjectIcon, addGalleryImage, deleteGalleryImage, fetchProjectDependencies, fetchProjectVersions, fetchGameVersionTags, fetchLoaderTags, modifyVersion, deleteVersionById, fetchUserPayoutHistoryWithStatus, fetchUserByIdWithStatus, fetchPayoutBalanceV3WithStatus, joinTeam, transferTeamOwnership } from './services/modrinthService';
 import { AuthState, ModrinthUser, ModrinthProject, NavTab, ProjectMember, SettingsContextType, ThemeMode, Language, UserSearchResult, ModifyUserPayload, ModrinthNotification, ProjectDependency, ModrinthVersion, ModrinthPayoutHistory } from './types';
 import ProjectCard from './components/ProjectCard';
@@ -2763,6 +2763,119 @@ const AnalyticsPage: React.FC<{ user: ModrinthUser; token: string }> = ({ user, 
       !payoutDataVisible ||
       !walletConfigured);
 
+  const weeklySnapshotStorageKey = useMemo(() => `rinthy_analytics_snapshots_${user.id}`, [user.id]);
+  const [weeklyResetTick, setWeeklyResetTick] = useState(0);
+
+  type AnalyticsSnapshot = {
+    capturedAt: number;
+    projects: Record<string, { downloads: number; followers: number }>;
+  };
+
+  const weeklySummary = useMemo(() => {
+    const now = Date.now();
+    const weekMs = 7 * 24 * 60 * 60 * 1000;
+    const currentSnapshot: AnalyticsSnapshot = {
+      capturedAt: now,
+      projects: projects.reduce<AnalyticsSnapshot['projects']>((acc, project) => {
+        acc[project.id] = {
+          downloads: project.downloads,
+          followers: project.followers
+        };
+        return acc;
+      }, {})
+    };
+
+    const readSnapshots = (): AnalyticsSnapshot[] => {
+      try {
+        const raw = localStorage.getItem(weeklySnapshotStorageKey);
+        const parsed = raw ? JSON.parse(raw) : [];
+        if (!Array.isArray(parsed)) return [];
+        return parsed.filter((snapshot): snapshot is AnalyticsSnapshot => {
+          return Boolean(
+            snapshot &&
+            typeof snapshot.capturedAt === 'number' &&
+            snapshot.projects &&
+            typeof snapshot.projects === 'object'
+          );
+        });
+      } catch {
+        return [];
+      }
+    };
+
+    const snapshots = readSnapshots();
+    const oldestAllowed = now - 35 * 24 * 60 * 60 * 1000;
+    const retainedSnapshots = snapshots
+      .filter(snapshot => snapshot.capturedAt >= oldestAllowed)
+      .sort((a, b) => a.capturedAt - b.capturedAt);
+    const baseline =
+      retainedSnapshots
+        .filter(snapshot => snapshot.capturedAt <= now - weekMs)
+        .sort((a, b) => b.capturedAt - a.capturedAt)[0] ??
+      retainedSnapshots[0] ??
+      currentSnapshot;
+
+    try {
+      const latest = retainedSnapshots[retainedSnapshots.length - 1];
+      const hasMetricChange = projects.some(project => {
+        const previous = latest?.projects[project.id];
+        return previous?.downloads !== project.downloads || previous?.followers !== project.followers;
+      });
+      const shouldStoreCurrent = !latest || now - latest.capturedAt > 60 * 60 * 1000 || hasMetricChange;
+      const nextSnapshots = shouldStoreCurrent ? [...retainedSnapshots, currentSnapshot] : retainedSnapshots;
+      localStorage.setItem(weeklySnapshotStorageKey, JSON.stringify(nextSnapshots));
+    } catch {
+      // Local analytics can work without persistence; it will just reset on next launch.
+    }
+
+    const projectDeltas = projects.map(project => {
+      const previous = baseline.projects[project.id];
+      return {
+        id: project.id,
+        title: project.title,
+        icon_url: project.icon_url,
+        downloads: Math.max(0, project.downloads - (previous?.downloads ?? project.downloads)),
+        followers: Math.max(0, project.followers - (previous?.followers ?? project.followers))
+      };
+    });
+
+    const downloads = projectDeltas.reduce((acc, project) => acc + project.downloads, 0);
+    const followers = projectDeltas.reduce((acc, project) => acc + project.followers, 0);
+    const activeProjects = projectDeltas.filter(project => project.downloads > 0 || project.followers > 0).length;
+    const topProject = [...projectDeltas].sort((a, b) => (b.downloads + b.followers) - (a.downloads + a.followers))[0] ?? null;
+    const daysTracked = Math.max(1, Math.round((now - baseline.capturedAt) / (24 * 60 * 60 * 1000)));
+
+    return {
+      downloads,
+      followers,
+      activeProjects,
+      topProject,
+      daysTracked,
+      isBaselineReady: baseline !== currentSnapshot && now - baseline.capturedAt >= weekMs
+    };
+  }, [projects, weeklySnapshotStorageKey, weeklyResetTick]);
+
+  const resetWeeklySummary = useCallback(() => {
+    const snapshot: AnalyticsSnapshot = {
+      capturedAt: Date.now(),
+      projects: projects.reduce<AnalyticsSnapshot['projects']>((acc, project) => {
+        acc[project.id] = {
+          downloads: project.downloads,
+          followers: project.followers
+        };
+        return acc;
+      }, {})
+    };
+
+    try {
+      localStorage.setItem(weeklySnapshotStorageKey, JSON.stringify([snapshot]));
+    } catch {
+      // Ignore storage errors; the next analytics load will rebuild the baseline.
+    }
+
+    setWeeklyResetTick((value) => value + 1);
+  }, [projects, weeklySnapshotStorageKey]);
+
   if (loading) return <div className="flex justify-center pt-40 animate-fade-in"><Loader2 className="animate-spin text-modrinth-green" /></div>;
 
   return (
@@ -2930,6 +3043,79 @@ const AnalyticsPage: React.FC<{ user: ModrinthUser; token: string }> = ({ user, 
         </div>
       </div>
 
+      <div className="mb-8 animate-fade-in-up" style={{ animationDelay: '0.12s' }}>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-bold text-modrinth-muted uppercase">{t('weekly_summary')}</h3>
+          <div className="flex items-center gap-2">
+            <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-modrinth-muted">{t('last_7_days')}</div>
+            <button
+              onClick={resetWeeklySummary}
+              className="px-2.5 py-1 rounded-lg bg-modrinth-card border border-modrinth-border text-[10px] font-bold uppercase text-modrinth-muted hover:text-modrinth-text hover:border-modrinth-green/40 active:scale-95 transition-all"
+            >
+              {t('reset')}
+            </button>
+          </div>
+        </div>
+        <div className="bg-modrinth-card/75 backdrop-blur-xl p-5 rounded-3xl shadow-[0_10px_26px_rgba(0,0,0,0.22)] relative overflow-hidden">
+          <div className="grid grid-cols-2 gap-3 relative">
+            <div className="bg-modrinth-bg/40 rounded-2xl p-4">
+              <div className="flex items-center justify-between mb-2">
+                <Download size={18} className="text-modrinth-green" />
+                <span className="text-[10px] uppercase text-modrinth-muted font-bold">{t('downloads_label')}</span>
+              </div>
+              <div className="text-2xl font-bold text-modrinth-text">+{weeklySummary.downloads.toLocaleString()}</div>
+              <div className="text-xs text-modrinth-muted">{t('weekly_downloads')}</div>
+            </div>
+            <div className="bg-modrinth-bg/40 rounded-2xl p-4">
+              <div className="flex items-center justify-between mb-2">
+                <Heart size={18} className="text-red-400" />
+                <span className="text-[10px] uppercase text-modrinth-muted font-bold">{t('follows_label')}</span>
+              </div>
+              <div className="text-2xl font-bold text-modrinth-text">+{weeklySummary.followers.toLocaleString()}</div>
+              <div className="text-xs text-modrinth-muted">{t('weekly_follows')}</div>
+            </div>
+            <div className="bg-modrinth-bg/40 rounded-2xl p-4">
+              <div className="flex items-center justify-between mb-2">
+                <Activity size={18} className="text-modrinth-green" />
+                <span className="text-[10px] uppercase text-modrinth-muted font-bold">{t('active_label')}</span>
+              </div>
+              <div className="text-2xl font-bold text-modrinth-text">{weeklySummary.activeProjects.toLocaleString()}</div>
+              <div className="text-xs text-modrinth-muted">{t('active_projects_week')}</div>
+            </div>
+            <div className="bg-modrinth-bg/40 rounded-2xl p-4 min-w-0">
+              <div className="flex items-center justify-between mb-2">
+                <Calendar size={18} className="text-modrinth-green" />
+                <span className="text-[10px] uppercase text-modrinth-muted font-bold">{t('tracked_label')}</span>
+              </div>
+              <div className="text-2xl font-bold text-modrinth-text">{weeklySummary.daysTracked}</div>
+              <div className="text-xs text-modrinth-muted">{t('days_tracked')}</div>
+            </div>
+          </div>
+          {weeklySummary.topProject && (weeklySummary.topProject.downloads > 0 || weeklySummary.topProject.followers > 0) && (
+            <div className="mt-3 bg-modrinth-bg/40 rounded-2xl p-3 flex items-center gap-3 relative">
+              {weeklySummary.topProject.icon_url ? (
+                <img src={weeklySummary.topProject.icon_url} alt={weeklySummary.topProject.title} className="w-9 h-9 rounded-xl bg-modrinth-bg" />
+              ) : (
+                <div className="w-9 h-9 rounded-xl bg-modrinth-bg flex items-center justify-center text-modrinth-muted">
+                  <Package size={16} />
+                </div>
+              )}
+              <div className="min-w-0 flex-1">
+                <div className="text-xs text-modrinth-muted">{t('weekly_top_project')}</div>
+                <div className="text-sm font-bold text-modrinth-text truncate">{weeklySummary.topProject.title}</div>
+              </div>
+              <div className="text-right shrink-0">
+                <div className="text-sm font-mono font-bold text-modrinth-green">+{weeklySummary.topProject.downloads.toLocaleString()}</div>
+                <div className="text-[10px] text-modrinth-muted">{t('downloads')}</div>
+              </div>
+            </div>
+          )}
+          {!weeklySummary.isBaselineReady && (
+            <p className="mt-3 text-[11px] leading-relaxed text-modrinth-muted relative">{t('weekly_baseline_note')}</p>
+          )}
+        </div>
+      </div>
+
       {/* Improved Top Projects Chart */}
       <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-bold text-modrinth-muted uppercase">{t('top_projects')}</h3>
@@ -2988,6 +3174,7 @@ const AnalyticsPage: React.FC<{ user: ModrinthUser; token: string }> = ({ user, 
           <div className="col-span-2 text-sm text-modrinth-muted text-center py-4">No category data available</div>
         )}
       </div>
+
     </div>
   );
 };
@@ -3141,7 +3328,23 @@ const SettingsPage: React.FC<{ user: ModrinthUser; onLogout: () => void; token: 
 
 const MainLayout: React.FC<{ user: ModrinthUser; token: string; onLogout: () => void; updateInfo?: GitHubRelease | null }> = ({ user, token, onLogout, updateInfo }) => {
   const [activeTab, setActiveTab] = useState<NavTab>(NavTab.PROJECTS);
-  const { t } = useSettings();
+  const { t, theme } = useSettings();
+
+  const handleTabChange = useCallback((nextTab: NavTab) => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+
+    if (nextTab !== activeTab) {
+      setActiveTab(nextTab);
+    }
+
+    window.setTimeout(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    }, 0);
+  }, [activeTab]);
   
   return (
     <>
@@ -3150,7 +3353,7 @@ const MainLayout: React.FC<{ user: ModrinthUser; token: string; onLogout: () => 
         {activeTab === NavTab.ANALYTICS && <AnalyticsPage user={user} token={token} />}
         {activeTab === NavTab.SETTINGS && <SettingsPage user={user} onLogout={onLogout} token={token} updateInfo={updateInfo} />}
       </div>
-      <BottomNav activeTab={activeTab} onTabChange={setActiveTab} t={t} />
+      <BottomNav activeTab={activeTab} onTabChange={handleTabChange} t={t} theme={theme} />
     </>
   );
 };

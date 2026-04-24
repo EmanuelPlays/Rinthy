@@ -1,14 +1,16 @@
 import React from 'react';
 import { NavTab } from '../types';
 import { Grid, BarChart2, Settings } from 'lucide-react';
+import type { ThemeMode } from '../types';
 
 interface BottomNavProps {
   activeTab: NavTab;
   onTabChange: (tab: NavTab) => void;
   t: (key: string) => string;
+  theme: ThemeMode;
 }
 
-const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onTabChange, t }) => {
+const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onTabChange, t, theme }) => {
   const navItems = [
     { id: NavTab.PROJECTS, icon: Grid, label: t('dashboard') },
     { id: NavTab.ANALYTICS, icon: BarChart2, label: t('analytics') },
@@ -22,7 +24,11 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onTabChange, t }) => {
         style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 8px)' }}
       >
         <div className="pointer-events-auto">
-          <div className="relative overflow-hidden rounded-2xl bg-modrinth-card/70 backdrop-blur-xl shadow-[0_10px_30px_rgba(0,0,0,0.35)] transition-colors duration-300">
+          <div className={`relative overflow-hidden rounded-2xl transition-colors duration-300 ${
+            theme === 'light'
+              ? 'bg-modrinth-card border border-black/10 shadow-none'
+              : 'bg-modrinth-card/70 backdrop-blur-xl shadow-[0_10px_30px_rgba(0,0,0,0.35)]'
+          }`}>
             <div className="relative h-[56px] px-1">
               <div className="flex justify-between items-center h-full gap-1">
                 {navItems.map((item) => {
