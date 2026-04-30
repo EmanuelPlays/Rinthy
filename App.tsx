@@ -8,7 +8,7 @@ import { fetchCurrentUser, fetchUserProjects, fetchProject, updateProject, fetch
 import { AuthState, ModrinthUser, ModrinthProject, NavTab, ProjectMember, SettingsContextType, ThemeMode, Language, UserSearchResult, ModifyUserPayload, ModrinthNotification, ProjectDependency, ModrinthVersion, ModrinthPayoutHistory } from './types';
 import ProjectCard from './components/ProjectCard';
 import BottomNav from './components/BottomNav';
-import ModpackCreator from './components/ModpackCreator';
+import ModpackCreator from './components/ModpackCreator/index';
 import { DEFAULT_LANGUAGE, isSupportedLanguage, LANGUAGE_OPTIONS, TRANSLATIONS } from './locales';
 const MarkdownRenderer = React.lazy(() => import('./components/MarkdownRenderer'));
 
